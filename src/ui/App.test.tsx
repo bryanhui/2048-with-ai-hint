@@ -359,7 +359,7 @@ describe('App', () => {
 
   it('shows MoveHistory when YOLO is turned on', () => {
     render(<App />);
-    fireEvent.click(screen.getByText('YOLO AI'));
+    fireEvent.click(screen.getByText('YOLO'));
     expect(screen.getByText('Last Moves')).toBeInTheDocument();
   });
 
@@ -372,7 +372,7 @@ describe('App', () => {
     });
 
     const { rerender } = render(<App />);
-    fireEvent.click(screen.getByText('YOLO AI'));
+    fireEvent.click(screen.getByText('YOLO'));
 
     expect(screen.getByText('Last Moves')).toBeInTheDocument();
 
@@ -404,10 +404,10 @@ describe('App', () => {
 
   it('hides MoveHistory when YOLO is turned off', () => {
     render(<App />);
-    fireEvent.click(screen.getByText('YOLO AI'));
+    fireEvent.click(screen.getByText('YOLO'));
     expect(screen.getByText('Last Moves')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Stop AI'));
+    fireEvent.click(screen.getByText('Stop YOLO'));
     expect(screen.queryByText('Last Moves')).not.toBeInTheDocument();
   });
 });

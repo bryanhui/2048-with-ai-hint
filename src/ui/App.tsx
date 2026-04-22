@@ -271,7 +271,7 @@ export function App(): React.ReactElement {
             className={`btn ${yoloEnabled ? 'btn-danger' : 'btn-gold'}`}
             onClick={() => setYoloEnabled((prev) => !prev)}
           >
-            {yoloEnabled ? 'Stop AI' : 'YOLO AI'}
+            {yoloEnabled ? 'Stop YOLO' : 'YOLO'}
           </button>
         )}
       </div>
