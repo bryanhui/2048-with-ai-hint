@@ -1,9 +1,7 @@
 import { Direction, GameEvent, GameState } from './types.js';
-import { canMove, hasWinningTile, initBoard, move, pickRandomEmptyCell } from './board.js';
+import { canMove, hasWinningTile, initBoard, move, pickRandomEmptyCell, WINNING_TILE } from './board.js';
 import { applyEvent } from './reducer.js';
 import * as Events from './events.js';
-
-const WINNING_TILE = 2048;
 
 export interface MoveResult {
   events: GameEvent[];

@@ -11,14 +11,15 @@ import { Board, getSpawnAndMerged } from './components/Board.js';
 import { ScoreBoard } from './components/ScoreBoard.js';
 import { MoveHistory } from './components/MoveHistory.js';
 import { GameOverlay } from './components/GameOverlay.js';
-import { HintDisplay } from './components/HintDisplay.js';
-
+import { HintArrow } from './components/HintArrow.js';
+import { AiHintPanel } from './components/AiHintPanel.js';
 
 export function App(): React.ReactElement {
-  const strategy = useMemo(
-    () => (CONFIG.ENABLE_AI_HINT ? new ExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH) : null),
-    []
-  );
+  const strategy = useMemo(() => {
+    if (!CONFIG.ENABLE_AI_HINT) return null;
+    return new ExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH);
+  }, []);
+
   const store = useMemo(() => new LocalStorageEventStore(), []);
   const { state, move, undo, newGame } = useGame({
     store,
@@ -28,11 +29,11 @@ export function App(): React.ReactElement {
   const [hintVisible, setHintVisible] = useState(false);
   const [hintDirection, setHintDirection] = useState('left');
   const [hintDuration, setHintDuration] = useState(0);
-  const [hintTopScore, setHintTopScore] = useState(0);
-  const [hintSecondScore, setHintSecondScore] = useState(0);
-  const [hintSecondDirection, setHintSecondDirection] = useState('left');
+  const [hintScores, setHintScores] = useState<Record<string, number>>({});
   const hintTimeoutRef = useRef<number | null>(null);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const [yoloEnabled, setYoloEnabled] = useState(false);
+  const yoloIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -55,24 +56,44 @@ export function App(): React.ReactElement {
     return attachTouch(el, move);
   }, [move]);
 
+  // YOLO auto-play interval
+  useEffect(() => {
+    if (!yoloEnabled || !strategy || state.status !== 'playing') {
+      if (yoloIntervalRef.current !== null) {
+        clearInterval(yoloIntervalRef.current);
+        yoloIntervalRef.current = null;
+      }
+      return;
+    }
+
+    yoloIntervalRef.current = window.setInterval(async () => {
+      const result = await measureMove(strategy, state);
+      if (result.direction) {
+        move(result.direction);
+      }
+    }, CONFIG.YOLO_DELAY_MS);
+
+    return () => {
+      if (yoloIntervalRef.current !== null) {
+        clearInterval(yoloIntervalRef.current);
+        yoloIntervalRef.current = null;
+      }
+    };
+  }, [yoloEnabled, strategy, state, move]);
+
   const handleHint = useCallback(async () => {
     if (!strategy || state.status !== 'playing') return;
     const result = await measureMove(strategy, state);
-    const sorted = Object.entries(result.scores)
-      .filter(([, score]) => score !== -Infinity)
-      .sort(([, a], [, b]) => b - a);
     setHintDirection(result.direction);
     setHintDuration(result.durationMs);
-    setHintTopScore(Math.round(sorted[0]?.[1] ?? 0));
-    setHintSecondScore(Math.round(sorted[1]?.[1] ?? 0));
-    setHintSecondDirection(sorted[1]?.[0] ?? 'left');
+    setHintScores(result.scores);
     setHintVisible(true);
     if (hintTimeoutRef.current !== null) {
       clearTimeout(hintTimeoutRef.current);
     }
     hintTimeoutRef.current = window.setTimeout(() => {
       setHintVisible(false);
-    }, 2500);
+    }, 4000);
   }, [state, strategy]);
 
   const { spawnPosition, mergedPositions } = getSpawnAndMerged(state.history);
@@ -85,6 +106,23 @@ export function App(): React.ReactElement {
           <ScoreBoard score={state.score} highScore={state.highScore} />
         </div>
       </header>
+
+      {CONFIG.ENABLE_AI_HINT && (
+        <AiHintPanel
+          hintVisible={hintVisible}
+          hintDirection={hintDirection}
+          strategyName={strategy?.name ?? ''}
+          durationMs={hintDuration}
+          hintScores={hintScores}
+          onDismiss={() => {
+            if (hintTimeoutRef.current !== null) {
+              clearTimeout(hintTimeoutRef.current);
+              hintTimeoutRef.current = null;
+            }
+            setHintVisible(false);
+          }}
+        />
+      )}
 
       <div className="controls">
         <button id="btn-new" className="btn" onClick={() => { setOverlayDismissed(false); newGame(); }}>
@@ -102,27 +140,22 @@ export function App(): React.ReactElement {
         )}
       </div>
 
-      {CONFIG.ENABLE_STRATEGY_SELECTOR && (
-        <div className="ai-bar">
-          <select id="ai-strategy" className="select" defaultValue={CONFIG.DEFAULT_STRATEGY}>
-            <option value="expectimax">Expectimax</option>
-          </select>
-        </div>
-      )}
-
-      <div id="board" className="board" ref={boardRef}>
+      <div
+        id="board"
+        className="board"
+        ref={boardRef}
+        onClick={() => {
+          if (hintTimeoutRef.current !== null) {
+            clearTimeout(hintTimeoutRef.current);
+            hintTimeoutRef.current = null;
+          }
+          setHintVisible(false);
+        }}
+      >
         <div className="grid-bg"></div>
         <Board board={state.board} spawnPosition={spawnPosition} mergedPositions={mergedPositions} />
-        {CONFIG.ENABLE_AI_HINT && (
-          <HintDisplay
-            visible={hintVisible}
-            direction={hintDirection}
-            strategyName={strategy?.name ?? ''}
-            durationMs={hintDuration}
-            topScore={hintTopScore}
-            secondScore={hintSecondScore}
-            secondDirection={hintSecondDirection}
-          />
+        {CONFIG.ENABLE_AI_HINT && hintVisible && (
+          <HintArrow direction={hintDirection} />
         )}
       </div>
 
@@ -133,10 +166,24 @@ export function App(): React.ReactElement {
         onResume={() => setOverlayDismissed(true)}
       />
 
-      <div className="history">
-        <h3 className="history-title">Last Moves</h3>
-        <MoveHistory history={state.history} />
-      </div>
+      {CONFIG.ENABLE_YOLO && (
+        <div className="yolo-controls">
+          <button
+            id="btn-yolo"
+            className={`btn ${yoloEnabled ? 'btn-danger' : 'btn-gold'}`}
+            onClick={() => setYoloEnabled((prev) => !prev)}
+          >
+            {yoloEnabled ? 'Stop AI' : 'YOLO AI'}
+          </button>
+        </div>
+      )}
+
+      {CONFIG.ENABLE_YOLO && (
+        <div className="history">
+          <h3 className="history-title">Last Moves</h3>
+          <MoveHistory history={state.history} />
+        </div>
+      )}
     </div>
   );
 }

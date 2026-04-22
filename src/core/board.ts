@@ -6,7 +6,7 @@ export let BOARD_SIZE = 4;
 export function setBoardSize(size: number): void {
   BOARD_SIZE = size;
 }
-const WINNING_TILE = 2048;
+export const WINNING_TILE = 2048;
 
 export function createEmptyBoard(): Board {
   return Array.from({ length: BOARD_SIZE }, () => Array.from({ length: BOARD_SIZE }, () => null));

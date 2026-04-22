@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { pickBestMove, measureMove } from './types.js';
 import { makeState } from './test-helpers.js';
 import { ExpectimaxStrategy } from './expectimax.js';
@@ -33,5 +33,22 @@ describe('measureMove', () => {
     expect(result.direction).toBeDefined();
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.scores).toBeDefined();
+  });
+
+  it('works with async scoreMoves (Nim-like strategy)', async () => {
+    const asyncStrategy = {
+      name: 'async-mock',
+      selectMove: vi.fn(),
+      scoreMoves: vi.fn().mockResolvedValue({ up: 10, down: 5, left: 20, right: 3 }),
+    };
+    const state = makeState([
+      [2, 2, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ]);
+    const result = await measureMove(asyncStrategy as unknown as import('./types.js').Strategy, state);
+    expect(result.direction).toBe('left');
+    expect(result.scores.left).toBe(20);
   });
 });

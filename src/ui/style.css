@@ -409,3 +409,134 @@ html, body {
 .tile-merge {
   animation: tileMerge 0.18s ease-in-out;
 }
+
+/* AI Hint Panel (top banner) */
+.ai-hint-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--tile-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.ai-hint-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-hint-result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-hint-direction {
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.ai-hint-meta {
+  color: var(--text-muted);
+}
+
+.ai-hint-scores {
+  color: var(--text-muted);
+}
+
+.ai-hint-reason {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ai-hint-health {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-hint-health-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-hint-health-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-hint-models {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-hint-model-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.nim-health-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.nim-health-ok {
+  background: rgba(127, 176, 105, 0.15);
+  color: var(--accent);
+}
+
+.nim-health-error {
+  background: rgba(220, 80, 80, 0.15);
+  color: #dc5050;
+}
+
+.nim-health-latency {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.nim-health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.nim-health-dot-ok {
+  background: var(--accent);
+}
+
+.nim-health-dot-error {
+  background: #dc5050;
+}
+
+.nim-health-model-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nim-health-model-latency {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.select-small {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--tile-border);
+  color: var(--text);
+}

@@ -12,4 +12,9 @@ describe('config', () => {
     expect(CONFIG.DEFAULT_STRATEGY).toBeDefined();
     expect(typeof CONFIG.EXPECTIMAX_DEPTH).toBe('number');
   });
+
+  it('exports YOLO settings', () => {
+    expect(typeof CONFIG.ENABLE_YOLO).toBe('boolean');
+    expect(typeof CONFIG.YOLO_DELAY_MS).toBe('number');
+  });
 });

@@ -42,8 +42,10 @@ vi.mock('./config.js', () => ({
     ENABLE_STRATEGY_SELECTOR: true,
     ENABLE_AI_HINT: true,
     ENABLE_UNDO: true,
+    ENABLE_YOLO: true,
+    YOLO_DELAY_MS: 400,
     DEFAULT_STRATEGY: 'expectimax',
-    EXPECTIMAX_DEPTH: 4,
+    EXPECTIMAX_DEPTH: 6,
   },
 }));
 
@@ -194,5 +196,41 @@ describe('App', () => {
   it('attaches touch handler to board', () => {
     render(<App />);
     expect(mockAttachTouch).toHaveBeenCalled();
+  });
+
+  it('dismisses hint overlay when board is clicked', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(document.getElementById('board')!);
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
+  });
+
+  it('dismisses hint overlay when panel is clicked', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Expectimax ·/i));
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
+  });
+
+  it('shows all 4 direction scores in hint', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/↑/)).toBeInTheDocument();
+      expect(screen.getByText(/↓/)).toBeInTheDocument();
+      expect(screen.getByText(/←/)).toBeInTheDocument();
+      expect(screen.getByText(/→/)).toBeInTheDocument();
+    });
   });
 });
