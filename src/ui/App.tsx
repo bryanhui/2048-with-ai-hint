@@ -11,7 +11,6 @@ import { Board, getSpawnAndMerged } from './components/Board.js';
 import { ScoreBoard } from './components/ScoreBoard.js';
 import { MoveHistory } from './components/MoveHistory.js';
 import { GameOverlay } from './components/GameOverlay.js';
-import { HintArrow } from './components/HintArrow.js';
 import { AiHintPanel } from './components/AiHintPanel.js';
 import { WelcomeOverlay } from './components/WelcomeOverlay.js';
 import type { Direction } from '../core/types.js';
@@ -48,7 +47,6 @@ export function App(): React.ReactElement {
     gameId: 'default',
   });
 
-  const [hintVisible, setHintVisible] = useState(false);
   const [hintDirection, setHintDirection] = useState('left');
   const [hintScores, setHintScores] = useState<Record<string, number>>({});
   const [overlayDismissed, setOverlayDismissed] = useState(false);
@@ -118,31 +116,29 @@ export function App(): React.ReactElement {
     };
   }, [yoloEnabled, strategy, state, move]);
 
-  // Dismiss hint when YOLO is turned off
+  // Clear hint scores when YOLO is turned off
   useEffect(() => {
     if (prevYoloEnabledRef.current && !yoloEnabled) {
-      setHintVisible(false);
+      setHintScores({});
     }
     prevYoloEnabledRef.current = yoloEnabled;
   }, [yoloEnabled]);
 
-  // Handle hint on move: dismiss, auto-hint, or YOLO hint
+  // Handle hint on move: auto-hint, YOLO hint, or clear manual hint
   useEffect(() => {
     if (state.history.length > prevHistoryLengthRef.current) {
       if (yoloEnabled && strategy && state.status === 'playing') {
         measureMove(strategy, state).then((result) => {
           setHintDirection(result.direction);
           setHintScores(result.scores);
-          setHintVisible(true);
         });
       } else if (autoHint && strategy && state.status === 'playing') {
         measureMove(strategy, state).then((result) => {
           setHintDirection(result.direction);
           setHintScores(result.scores);
-          setHintVisible(true);
         });
       } else {
-        setHintVisible(false);
+        setHintScores({});
       }
     }
     prevHistoryLengthRef.current = state.history.length;
@@ -153,7 +149,6 @@ export function App(): React.ReactElement {
     const result = await measureMove(strategy, state);
     setHintDirection(result.direction);
     setHintScores(result.scores);
-    setHintVisible(true);
   }, [state, strategy]);
 
   const handleHintPointerDown = useCallback(() => {
@@ -161,7 +156,7 @@ export function App(): React.ReactElement {
       longPressTimerRef.current = null;
       setAutoHint((prev) => !prev);
       if (autoHint) {
-        setHintVisible(false);
+        setHintScores({});
       } else {
         generateHint();
       }
@@ -174,7 +169,7 @@ export function App(): React.ReactElement {
       longPressTimerRef.current = null;
       if (autoHint) {
         setAutoHint(false);
-        setHintVisible(false);
+        setHintScores({});
       } else {
         generateHint();
       }
@@ -215,7 +210,7 @@ export function App(): React.ReactElement {
       </header>
 
       <div className="controls">
-        <button id="btn-new" className="btn" onClick={() => { setOverlayDismissed(false); newGame(); }}>
+        <button id="btn-new" className="btn" onClick={() => { setOverlayDismissed(false); setAutoHint(false); setYoloEnabled(false); setHintScores({}); newGame(); }}>
           New Game
         </button>
         {CONFIG.ENABLE_UNDO && (
@@ -255,15 +250,9 @@ export function App(): React.ReactElement {
         id="board"
         className="board"
         ref={boardRef}
-        onClick={() => {
-          if (!yoloEnabled) setHintVisible(false);
-        }}
       >
         <div className="grid-bg"></div>
         <Board board={state.board} spawnPosition={spawnPosition} mergedPositions={mergedPositions} />
-        {CONFIG.ENABLE_AI_HINT && hintVisible && (
-          <HintArrow direction={hintDirection} />
-        )}
       </div>
 
       <GameOverlay

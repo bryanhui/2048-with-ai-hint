@@ -102,6 +102,35 @@ describe('App', () => {
     expect(mockNewGame).toHaveBeenCalled();
   });
 
+  it('resets auto-hint and YOLO on New Game', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<App />);
+
+    // Enable auto-hint
+    const btn = screen.getByText('AI Hint');
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Hint')).toBeInTheDocument();
+    });
+
+    // Enable YOLO
+    fireEvent.click(screen.getByText('YOLO'));
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
+
+    // Click New Game
+    fireEvent.click(screen.getByText('New Game'));
+    expect(mockNewGame).toHaveBeenCalled();
+
+    // Auto-hint and YOLO should be off
+    expect(screen.queryByText('Auto Hint')).not.toBeInTheDocument();
+    expect(screen.queryByText('Last Moves')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
   it('calls undo when Undo is clicked', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Undo'));
@@ -120,6 +149,31 @@ describe('App', () => {
     await waitFor(() => {
       // After clicking, scores should be populated (not all —)
       expect(screen.queryAllByText('—').length).toBeLessThan(4);
+    });
+  });
+
+  it('clears manual hint scores after a move when auto-hint and YOLO are off', async () => {
+    const { rerender } = render(<App />);
+
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.queryAllByText('—').length).toBeLessThan(4);
+    });
+
+    // Simulate a move without auto-hint or YOLO
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'up', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    // Scores should be cleared, all — again
+    await waitFor(() => {
+      expect(screen.getAllByText('—').length).toBe(4);
     });
   });
 
