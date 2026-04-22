@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ExpectimaxStrategy, measureMove } from '../ai/index.js';
+import { ImprovedExpectimaxStrategy, measureMove } from '../ai/index.js';
 import { LocalStorageEventStore, MemoryEventStore } from '../infrastructure/storage.js';
 import { CONFIG } from './config.js';
 import { useGame } from './hooks/useGame.js';
@@ -39,7 +39,7 @@ export function App(): React.ReactElement {
 
   const strategy = useMemo(() => {
     if (!CONFIG.ENABLE_AI_HINT) return null;
-    return new ExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH);
+    return new ImprovedExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH, 100);
   }, []);
 
   const { state, move, undo, newGame } = useGame({
@@ -227,6 +227,7 @@ export function App(): React.ReactElement {
             onMouseLeave={handleHintPointerLeave}
             onTouchStart={handleHintPointerDown}
             onTouchEnd={handleHintPointerUp}
+            onContextMenu={(e) => e.preventDefault()}
           >
             {autoHint ? 'Auto Hint' : 'AI Hint'}
           </button>
@@ -258,7 +259,7 @@ export function App(): React.ReactElement {
       <GameOverlay
         title={state.status === 'won' ? 'You Win!' : 'Game Over'}
         visible={!overlayDismissed && (state.status === 'won' || state.status === 'lost')}
-        onRestart={() => { setOverlayDismissed(false); newGame(); }}
+        onRestart={() => { setOverlayDismissed(false); setAutoHint(false); setYoloEnabled(false); setHintScores({}); newGame(); }}
         onResume={() => setOverlayDismissed(true)}
       />
 

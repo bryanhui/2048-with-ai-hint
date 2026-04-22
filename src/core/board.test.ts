@@ -6,6 +6,9 @@ import {
   spawnTile,
   hasWinningTile,
   moveLeft,
+  moveRight,
+  moveUp,
+  moveDown,
   move,
   canMove,
   pickRandomEmptyCell,
@@ -159,6 +162,171 @@ describe('moveLeft', () => {
       [null, null, null, null],
     ]);
     expect(result.scoreDelta).toBe(12);
+    expect(result.changed).toBe(true);
+  });
+});
+
+describe('moveRight', () => {
+  it('slides and merges tiles to the right', () => {
+    const board = [
+      [2, 2, 8, null],
+      [2, null, 2, 4],
+      [null, null, null, null],
+      [2, null, null, null],
+    ];
+    const result = moveRight(board);
+    expect(result.board).toEqual([
+      [null, null, 4, 8],
+      [null, null, 4, 4],
+      [null, null, null, null],
+      [null, null, null, 2],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('returns changed false when board does not change', () => {
+    const board = [
+      [null, null, 4, 2],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveRight(board);
+    expect(result.changed).toBe(false);
+  });
+
+  it('double merge: [2,2,2,2] → [null,null,4,4] with score 8', () => {
+    const board = [
+      [2, 2, 2, 2],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveRight(board);
+    expect(result.board).toEqual([
+      [null, null, 4, 4],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('double merge: [2,2,4,4] → [null,null,4,8] with score 12', () => {
+    const board = [
+      [2, 2, 4, 4],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveRight(board);
+    expect(result.board).toEqual([
+      [null, null, 4, 8],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(12);
+    expect(result.changed).toBe(true);
+  });
+});
+
+describe('moveUp', () => {
+  it('slides and merges tiles upward', () => {
+    const board = [
+      [null, 4, null, null],
+      [8, 2, null, null],
+      [2, null, null, null],
+      [2, 2, null, 2],
+    ];
+    const result = moveUp(board);
+    expect(result.board).toEqual([
+      [8, 4, null, 2],
+      [4, 4, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('returns changed false when board does not change', () => {
+    const board = [
+      [2, null, null, null],
+      [4, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveUp(board);
+    expect(result.changed).toBe(false);
+  });
+
+  it('double merge in column: [2,2,2,2] → [4,4,null,null] with score 8', () => {
+    const board = [
+      [2, null, null, null],
+      [2, null, null, null],
+      [2, null, null, null],
+      [2, null, null, null],
+    ];
+    const result = moveUp(board);
+    expect(result.board).toEqual([
+      [4, null, null, null],
+      [4, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+});
+
+describe('moveDown', () => {
+  it('slides and merges tiles downward', () => {
+    const board = [
+      [2, 2, null, null],
+      [2, null, null, null],
+      [8, 2, null, null],
+      [null, 4, null, 2],
+    ];
+    const result = moveDown(board);
+    expect(result.board).toEqual([
+      [null, null, null, null],
+      [null, null, null, null],
+      [4, 4, null, null],
+      [8, 4, null, 2],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('returns changed false when board does not change', () => {
+    const board = [
+      [null, null, null, null],
+      [null, null, null, null],
+      [2, null, null, null],
+      [4, null, null, null],
+    ];
+    const result = moveDown(board);
+    expect(result.changed).toBe(false);
+  });
+
+  it('double merge in column: [2,2,2,2] → [null,null,4,4] with score 8', () => {
+    const board = [
+      [2, null, null, null],
+      [2, null, null, null],
+      [2, null, null, null],
+      [2, null, null, null],
+    ];
+    const result = moveDown(board);
+    expect(result.board).toEqual([
+      [null, null, null, null],
+      [null, null, null, null],
+      [4, null, null, null],
+      [4, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
     expect(result.changed).toBe(true);
   });
 });

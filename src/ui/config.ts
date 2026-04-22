@@ -9,7 +9,7 @@ export const CONFIG = {
   ENABLE_UNDO: false,
 
   /** Default AI strategy used for hints */
-  DEFAULT_STRATEGY: 'expectimax',
+  DEFAULT_STRATEGY: 'improved_expectimax',
 
   /** Expectimax search depth (higher = stronger but slower) */
   EXPECTIMAX_DEPTH: 6,

@@ -74,7 +74,8 @@ export function moveLeft(board: Board): { board: Board; scoreDelta: number; chan
   const next: Board = [];
   let changed = false;
 
-  for (const row of board) {
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    const row = board[r];
     const result = slideRow(row);
     totalScore += result.scoreDelta;
     next.push(result.row);
@@ -86,51 +87,83 @@ export function moveLeft(board: Board): { board: Board; scoreDelta: number; chan
   return { board: next, scoreDelta: totalScore, changed };
 }
 
-function getColumn(board: Board, col: number): Cell[] {
-  return board.map((row) => row[col]);
-}
-
-function setColumn(board: Board, col: number, values: Cell[]): Board {
-  const next = cloneBoard(board);
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    next[row][col] = values[row];
-  }
-  return next;
-}
-
-export function move(board: Board, direction: Direction): { board: Board; scoreDelta: number; changed: boolean } {
-  if (direction === 'left') {
-    return moveLeft(board);
-  }
-
-  if (direction === 'right') {
-    const reversed = board.map((row) => [...row].reverse());
-    const result = moveLeft(reversed);
-    return {
-      board: result.board.map((row) => [...row].reverse()),
-      scoreDelta: result.scoreDelta,
-      changed: result.changed,
-    };
-  }
-
+export function moveRight(board: Board): { board: Board; scoreDelta: number; changed: boolean } {
   let totalScore = 0;
-  let nextBoard = cloneBoard(board);
+  const next: Board = [];
   let changed = false;
 
-  for (let col = 0; col < BOARD_SIZE; col++) {
-    const column = getColumn(board, col);
-    const toSlide = direction === 'up' ? column : [...column].reverse();
-    const result = slideRow(toSlide);
-    const finalColumn = direction === 'up' ? result.row : [...result.row].reverse();
-
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    const row = board[r];
+    const result = slideRow([...row].reverse());
+    const finalRow = [...result.row].reverse();
     totalScore += result.scoreDelta;
-    nextBoard = setColumn(nextBoard, col, finalColumn);
+    next.push(finalRow);
+    if (!changed && !arraysEqual(row, finalRow)) {
+      changed = true;
+    }
+  }
+
+  return { board: next, scoreDelta: totalScore, changed };
+}
+
+export function moveUp(board: Board): { board: Board; scoreDelta: number; changed: boolean } {
+  let totalScore = 0;
+  const next = cloneBoard(board);
+  let changed = false;
+
+  for (let c = 0; c < BOARD_SIZE; c++) {
+    const column: Cell[] = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      column.push(board[r][c]);
+    }
+    const result = slideRow(column);
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      next[r][c] = result.row[r];
+    }
+    totalScore += result.scoreDelta;
+    if (!changed && !arraysEqual(column, result.row)) {
+      changed = true;
+    }
+  }
+
+  return { board: next, scoreDelta: totalScore, changed };
+}
+
+export function moveDown(board: Board): { board: Board; scoreDelta: number; changed: boolean } {
+  let totalScore = 0;
+  const next = cloneBoard(board);
+  let changed = false;
+
+  for (let c = 0; c < BOARD_SIZE; c++) {
+    const column: Cell[] = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      column.push(board[r][c]);
+    }
+    const result = slideRow([...column].reverse());
+    const finalColumn = [...result.row].reverse();
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      next[r][c] = finalColumn[r];
+    }
+    totalScore += result.scoreDelta;
     if (!changed && !arraysEqual(column, finalColumn)) {
       changed = true;
     }
   }
 
-  return { board: nextBoard, scoreDelta: totalScore, changed };
+  return { board: next, scoreDelta: totalScore, changed };
+}
+
+export function move(board: Board, direction: Direction): { board: Board; scoreDelta: number; changed: boolean } {
+  switch (direction) {
+    case 'left':
+      return moveLeft(board);
+    case 'right':
+      return moveRight(board);
+    case 'up':
+      return moveUp(board);
+    case 'down':
+      return moveDown(board);
+  }
 }
 
 export function canMove(board: Board): boolean {

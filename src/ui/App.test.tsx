@@ -23,9 +23,9 @@ vi.mock('./input.js', () => ({
 }));
 
 vi.mock('../ai/index.js', () => ({
-  ExpectimaxStrategy: function () {
+  ImprovedExpectimaxStrategy: function () {
     return {
-      name: 'expectimax',
+      name: 'improved_expectimax',
       selectMove: vi.fn(),
       scoreMoves: () => ({ up: 10, down: 5, left: 20, right: 3 }),
     };
@@ -247,6 +247,44 @@ describe('App', () => {
     expect(screen.queryByText('You Win!')).not.toBeInTheDocument();
   });
 
+  it('New Game from overlay turns off auto-hint and YOLO', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<App />);
+    const btn = screen.getByText('AI Hint');
+
+    // Enable auto-hint via long press
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Hint')).toBeInTheDocument();
+    });
+
+    // Enable YOLO
+    fireEvent.click(screen.getByText('YOLO'));
+    expect(screen.getByText('Stop YOLO')).toBeInTheDocument();
+
+    // Simulate game over and show overlay
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'lost' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    // Click New Game from overlay
+    fireEvent.click(screen.getByText('New Game'));
+
+    expect(mockNewGame).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.queryByText('Auto Hint')).not.toBeInTheDocument();
+      expect(screen.queryByText('Stop YOLO')).not.toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
   it('shows error when trying to move after winning', () => {
     mockUseGame.mockReturnValue({
       state: makeState({ status: 'won' }),
@@ -317,6 +355,15 @@ describe('App', () => {
     expect(screen.getByText(/→/)).toBeInTheDocument();
   });
 
+  it('prevents context menu on AI Hint button', () => {
+    render(<App />);
+    const btn = screen.getByText('AI Hint');
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    const preventDefault = vi.spyOn(event, 'preventDefault');
+    btn.dispatchEvent(event);
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
   it('long press on AI Hint enables auto-hint mode', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<App />);
@@ -344,6 +391,11 @@ describe('App', () => {
 
     await waitFor(() => {
       expect(mockMeasureMove).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      const bestCell = screen.getByText('←').closest('.ai-hint-score-cell');
+      expect(bestCell).toHaveClass('ai-hint-score-best');
     });
 
     vi.useRealTimers();
