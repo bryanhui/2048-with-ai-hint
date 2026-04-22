@@ -87,12 +87,6 @@ html, body {
   flex-wrap: wrap;
 }
 
-.bottom-controls {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
 
 .move-error-toast {
   background: rgba(220, 53, 69, 0.9);

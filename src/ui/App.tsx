@@ -223,6 +223,28 @@ export function App(): React.ReactElement {
             Undo
           </button>
         )}
+        {CONFIG.ENABLE_AI_HINT && (
+          <button
+            id="btn-hint"
+            className={`btn ${autoHint ? 'btn-danger' : 'btn-gold'}`}
+            onMouseDown={handleHintPointerDown}
+            onMouseUp={handleHintPointerUp}
+            onMouseLeave={handleHintPointerLeave}
+            onTouchStart={handleHintPointerDown}
+            onTouchEnd={handleHintPointerUp}
+          >
+            {autoHint ? 'Auto Hint' : 'AI Hint'}
+          </button>
+        )}
+        {CONFIG.ENABLE_YOLO && (
+          <button
+            id="btn-yolo"
+            className={`btn ${yoloEnabled ? 'btn-danger' : 'btn-gold'}`}
+            onClick={() => setYoloEnabled((prev) => !prev)}
+          >
+            {yoloEnabled ? 'Stop YOLO' : 'YOLO'}
+          </button>
+        )}
       </div>
 
       {moveError && (
@@ -250,31 +272,6 @@ export function App(): React.ReactElement {
         onRestart={() => { setOverlayDismissed(false); newGame(); }}
         onResume={() => setOverlayDismissed(true)}
       />
-
-      <div className="bottom-controls">
-        {CONFIG.ENABLE_AI_HINT && (
-          <button
-            id="btn-hint"
-            className={`btn ${autoHint ? 'btn-danger' : 'btn-gold'}`}
-            onMouseDown={handleHintPointerDown}
-            onMouseUp={handleHintPointerUp}
-            onMouseLeave={handleHintPointerLeave}
-            onTouchStart={handleHintPointerDown}
-            onTouchEnd={handleHintPointerUp}
-          >
-            {autoHint ? 'Auto Hint' : 'AI Hint'}
-          </button>
-        )}
-        {CONFIG.ENABLE_YOLO && (
-          <button
-            id="btn-yolo"
-            className={`btn ${yoloEnabled ? 'btn-danger' : 'btn-gold'}`}
-            onClick={() => setYoloEnabled((prev) => !prev)}
-          >
-            {yoloEnabled ? 'Stop YOLO' : 'YOLO'}
-          </button>
-        )}
-      </div>
 
       {CONFIG.ENABLE_AI_HINT && (
         <AiHintPanel
