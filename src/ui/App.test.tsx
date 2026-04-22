@@ -279,6 +279,22 @@ describe('App', () => {
     vi.useRealTimers();
   });
 
+  it('auto-hint generates hint immediately when enabled', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<App />);
+    const btn = screen.getByText('AI Hint');
+
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(mockMeasureMove).toHaveBeenCalled();
+    });
+
+    vi.useRealTimers();
+  });
+
   it('auto-hint generates hint after a move', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockMeasureMove.mockResolvedValueOnce({

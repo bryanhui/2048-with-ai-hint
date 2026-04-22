@@ -162,9 +162,11 @@ export function App(): React.ReactElement {
       setAutoHint((prev) => !prev);
       if (autoHint) {
         setHintVisible(false);
+      } else {
+        generateHint();
       }
     }, LONG_PRESS_MS);
-  }, [autoHint]);
+  }, [autoHint, generateHint]);
 
   const handleHintPointerUp = useCallback(() => {
     if (longPressTimerRef.current !== null) {
