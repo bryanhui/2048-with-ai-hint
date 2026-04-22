@@ -9,12 +9,18 @@ describe('AiHintPanel', () => {
     hintScores: { up: 10, down: 5, left: 20, right: 3 } as Record<string, number>,
     strategyName: 'expectimax',
     durationMs: 42,
+    autoHint: false,
     onDismiss: vi.fn(),
   };
 
   it('renders placeholder when hint is not visible', () => {
     render(<AiHintPanel {...baseProps} />);
     expect(screen.getByText(/Click AI Hint/i)).toBeInTheDocument();
+  });
+
+  it('renders auto-hint placeholder when auto-hint is on', () => {
+    render(<AiHintPanel {...baseProps} autoHint={true} />);
+    expect(screen.getByText(/Auto Hint/i)).toBeInTheDocument();
   });
 
   it('renders hint overlay when visible', () => {

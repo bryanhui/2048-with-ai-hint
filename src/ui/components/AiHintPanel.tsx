@@ -13,6 +13,7 @@ interface AiHintPanelProps {
   strategyName: string;
   durationMs: number;
   hintScores: Record<string, number>;
+  autoHint: boolean;
   onDismiss: () => void;
 }
 
@@ -30,6 +31,7 @@ export function AiHintPanel({
   strategyName,
   durationMs,
   hintScores,
+  autoHint,
   onDismiss,
 }: AiHintPanelProps): React.ReactElement {
   return (
@@ -61,7 +63,9 @@ export function AiHintPanel({
         </div>
       ) : (
         <div className="ai-hint-health">
-          <span className="ai-hint-placeholder">Click AI Hint for a move suggestion</span>
+          <span className="ai-hint-placeholder">
+            {autoHint ? 'Auto Hint: hint will appear after each move' : 'Click AI Hint for a move suggestion'}
+          </span>
         </div>
       )}
     </div>

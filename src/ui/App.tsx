@@ -14,6 +14,8 @@ import { GameOverlay } from './components/GameOverlay.js';
 import { HintArrow } from './components/HintArrow.js';
 import { AiHintPanel } from './components/AiHintPanel.js';
 
+const LONG_PRESS_MS = 500;
+
 export function App(): React.ReactElement {
   const strategy = useMemo(() => {
     if (!CONFIG.ENABLE_AI_HINT) return null;
@@ -30,18 +32,12 @@ export function App(): React.ReactElement {
   const [hintDirection, setHintDirection] = useState('left');
   const [hintDuration, setHintDuration] = useState(0);
   const [hintScores, setHintScores] = useState<Record<string, number>>({});
-  const hintTimeoutRef = useRef<number | null>(null);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [yoloEnabled, setYoloEnabled] = useState(false);
   const yoloIntervalRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (hintTimeoutRef.current !== null) {
-        clearTimeout(hintTimeoutRef.current);
-      }
-    };
-  }, []);
+  const [autoHint, setAutoHint] = useState(false);
+  const longPressTimerRef = useRef<number | null>(null);
+  const prevHistoryLengthRef = useRef(state.history.length);
 
   useKeyboard(move);
 
@@ -81,20 +77,61 @@ export function App(): React.ReactElement {
     };
   }, [yoloEnabled, strategy, state, move]);
 
-  const handleHint = useCallback(async () => {
+  // Dismiss hint on move; auto-generate hint when auto-hint is on
+  useEffect(() => {
+    if (state.history.length > prevHistoryLengthRef.current) {
+      if (autoHint && strategy && state.status === 'playing') {
+        measureMove(strategy, state).then((result) => {
+          setHintDirection(result.direction);
+          setHintDuration(result.durationMs);
+          setHintScores(result.scores);
+          setHintVisible(true);
+        });
+      } else {
+        setHintVisible(false);
+      }
+    }
+    prevHistoryLengthRef.current = state.history.length;
+  }, [state.history.length, autoHint, strategy, state.status]);
+
+  const generateHint = useCallback(async () => {
     if (!strategy || state.status !== 'playing') return;
     const result = await measureMove(strategy, state);
     setHintDirection(result.direction);
     setHintDuration(result.durationMs);
     setHintScores(result.scores);
     setHintVisible(true);
-    if (hintTimeoutRef.current !== null) {
-      clearTimeout(hintTimeoutRef.current);
-    }
-    hintTimeoutRef.current = window.setTimeout(() => {
-      setHintVisible(false);
-    }, 4000);
   }, [state, strategy]);
+
+  const handleHintPointerDown = useCallback(() => {
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      setAutoHint((prev) => !prev);
+      if (autoHint) {
+        setHintVisible(false);
+      }
+    }, LONG_PRESS_MS);
+  }, [autoHint]);
+
+  const handleHintPointerUp = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+      if (autoHint) {
+        setAutoHint(false);
+        setHintVisible(false);
+      } else {
+        generateHint();
+      }
+    }
+  }, [autoHint, generateHint]);
+
+  const handleHintPointerLeave = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   const { spawnPosition, mergedPositions } = getSpawnAndMerged(state.history);
 
@@ -114,13 +151,8 @@ export function App(): React.ReactElement {
           strategyName={strategy?.name ?? ''}
           durationMs={hintDuration}
           hintScores={hintScores}
-          onDismiss={() => {
-            if (hintTimeoutRef.current !== null) {
-              clearTimeout(hintTimeoutRef.current);
-              hintTimeoutRef.current = null;
-            }
-            setHintVisible(false);
-          }}
+          autoHint={autoHint}
+          onDismiss={() => setHintVisible(false)}
         />
       )}
 
@@ -134,8 +166,16 @@ export function App(): React.ReactElement {
           </button>
         )}
         {CONFIG.ENABLE_AI_HINT && (
-          <button id="btn-hint" className="btn btn-gold" onClick={handleHint}>
-            AI Hint
+          <button
+            id="btn-hint"
+            className={`btn ${autoHint ? 'btn-danger' : 'btn-gold'}`}
+            onMouseDown={handleHintPointerDown}
+            onMouseUp={handleHintPointerUp}
+            onMouseLeave={handleHintPointerLeave}
+            onTouchStart={handleHintPointerDown}
+            onTouchEnd={handleHintPointerUp}
+          >
+            {autoHint ? 'Auto Hint' : 'AI Hint'}
           </button>
         )}
       </div>
@@ -144,13 +184,7 @@ export function App(): React.ReactElement {
         id="board"
         className="board"
         ref={boardRef}
-        onClick={() => {
-          if (hintTimeoutRef.current !== null) {
-            clearTimeout(hintTimeoutRef.current);
-            hintTimeoutRef.current = null;
-          }
-          setHintVisible(false);
-        }}
+        onClick={() => setHintVisible(false)}
       >
         <div className="grid-bg"></div>
         <Board board={state.board} spawnPosition={spawnPosition} mergedPositions={mergedPositions} />
