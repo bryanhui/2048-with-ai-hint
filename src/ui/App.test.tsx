@@ -296,7 +296,6 @@ describe('App', () => {
       expect(screen.getByText('Auto Hint')).toBeInTheDocument();
     });
 
-    // Simulate a move
     mockUseGame.mockReturnValue({
       state: makeState({ history: [{ direction: 'up', board: [], scoreDelta: 0 }] }),
       move: mockMove,
@@ -317,7 +316,6 @@ describe('App', () => {
     render(<App />);
     const btn = screen.getByText('AI Hint');
 
-    // Long press to enable
     fireEvent.mouseDown(btn);
     vi.advanceTimersByTime(600);
     fireEvent.mouseUp(btn);
@@ -326,13 +324,117 @@ describe('App', () => {
       expect(screen.getByText('Auto Hint')).toBeInTheDocument();
     });
 
-    // Normal click to disable
     fireEvent.mouseDown(btn);
     fireEvent.mouseUp(btn);
 
     await waitFor(() => {
       expect(screen.queryByText('Auto Hint')).not.toBeInTheDocument();
     });
+
+    vi.useRealTimers();
+  });
+
+  it('hides MoveHistory when YOLO is off', () => {
+    render(<App />);
+    expect(screen.queryByText('Last Moves')).not.toBeInTheDocument();
+  });
+
+  it('shows MoveHistory when YOLO is turned on', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
+  });
+
+  it('YOLO mode shows hint after auto-move', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
+
+    // Advance YOLO interval
+    vi.advanceTimersByTime(500);
+
+    // Simulate state update after YOLO move
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('YOLO hint is not dismissed by board click', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    vi.advanceTimersByTime(500);
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(document.getElementById('board')!);
+    expect(screen.getByText('Left')).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it('dismisses YOLO hint when YOLO is turned off', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    vi.advanceTimersByTime(500);
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Stop AI'));
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
 
     vi.useRealTimers();
   });

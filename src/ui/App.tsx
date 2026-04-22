@@ -38,6 +38,7 @@ export function App(): React.ReactElement {
   const [autoHint, setAutoHint] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const prevHistoryLengthRef = useRef(state.history.length);
+  const prevYoloEnabledRef = useRef(yoloEnabled);
 
   useKeyboard(move);
 
@@ -77,10 +78,25 @@ export function App(): React.ReactElement {
     };
   }, [yoloEnabled, strategy, state, move]);
 
-  // Dismiss hint on move; auto-generate hint when auto-hint is on
+  // Dismiss hint when YOLO is turned off
+  useEffect(() => {
+    if (prevYoloEnabledRef.current && !yoloEnabled) {
+      setHintVisible(false);
+    }
+    prevYoloEnabledRef.current = yoloEnabled;
+  }, [yoloEnabled]);
+
+  // Handle hint on move: dismiss, auto-hint, or YOLO hint
   useEffect(() => {
     if (state.history.length > prevHistoryLengthRef.current) {
-      if (autoHint && strategy && state.status === 'playing') {
+      if (yoloEnabled && strategy && state.status === 'playing') {
+        measureMove(strategy, state).then((result) => {
+          setHintDirection(result.direction);
+          setHintDuration(result.durationMs);
+          setHintScores(result.scores);
+          setHintVisible(true);
+        });
+      } else if (autoHint && strategy && state.status === 'playing') {
         measureMove(strategy, state).then((result) => {
           setHintDirection(result.direction);
           setHintDuration(result.durationMs);
@@ -92,7 +108,7 @@ export function App(): React.ReactElement {
       }
     }
     prevHistoryLengthRef.current = state.history.length;
-  }, [state.history.length, autoHint, strategy, state.status]);
+  }, [state.history.length, autoHint, yoloEnabled, strategy, state.status]);
 
   const generateHint = useCallback(async () => {
     if (!strategy || state.status !== 'playing') return;
@@ -151,8 +167,10 @@ export function App(): React.ReactElement {
           strategyName={strategy?.name ?? ''}
           durationMs={hintDuration}
           hintScores={hintScores}
-          autoHint={autoHint}
-          onDismiss={() => setHintVisible(false)}
+          autoHint={autoHint || yoloEnabled}
+          onDismiss={() => {
+            if (!yoloEnabled) setHintVisible(false);
+          }}
         />
       )}
 
@@ -184,7 +202,9 @@ export function App(): React.ReactElement {
         id="board"
         className="board"
         ref={boardRef}
-        onClick={() => setHintVisible(false)}
+        onClick={() => {
+          if (!yoloEnabled) setHintVisible(false);
+        }}
       >
         <div className="grid-bg"></div>
         <Board board={state.board} spawnPosition={spawnPosition} mergedPositions={mergedPositions} />
@@ -212,7 +232,7 @@ export function App(): React.ReactElement {
         </div>
       )}
 
-      {CONFIG.ENABLE_YOLO && (
+      {yoloEnabled && (
         <div className="history">
           <h3 className="history-title">Last Moves</h3>
           <MoveHistory history={state.history} />
