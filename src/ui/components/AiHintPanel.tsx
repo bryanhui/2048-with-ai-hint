@@ -16,8 +16,15 @@ export function AiHintPanel({
   hintDirection,
   hintScores,
 }: AiHintPanelProps): React.ReactElement {
+  const hasHint = Object.values(hintScores).some(
+    (s) => s !== -Infinity && s !== undefined
+  );
+
   return (
     <div className="ai-hint-panel">
+      <p className={`ai-hint-explanation ${hasHint ? 'ai-hint-explanation-hidden' : ''}`}>
+        Expectimax scores moves by simulating future board states.
+      </p>
       <div className="ai-hint-scores-grid">
         {Object.entries(DIR_ICONS).map(([dir, icon]) => {
           const score = hintScores[dir];

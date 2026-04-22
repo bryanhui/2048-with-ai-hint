@@ -33,6 +33,22 @@ describe('AiHintPanel', () => {
     expect(dashes.length).toBe(4);
   });
 
+  it('shows expectimax explanation when no hint is active', () => {
+    render(<AiHintPanel hintDirection="left" hintScores={{}} />);
+    expect(screen.getByText(/Expectimax scores moves/i)).toBeInTheDocument();
+  });
+
+  it('hides explanation when a hint is active', () => {
+    render(
+      <AiHintPanel
+        hintDirection="left"
+        hintScores={{ up: 10, down: 5, left: 20, right: 3 }}
+      />
+    );
+    const explanation = screen.getByText(/Expectimax scores moves/i);
+    expect(explanation).toHaveClass('ai-hint-explanation-hidden');
+  });
+
   it('highlights the best direction', () => {
     render(
       <AiHintPanel
