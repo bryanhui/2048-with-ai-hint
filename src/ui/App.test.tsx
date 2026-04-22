@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const mockUseGame = vi.fn();
@@ -35,6 +35,7 @@ vi.mock('../ai/index.js', () => ({
 
 vi.mock('../infrastructure/storage.js', () => ({
   LocalStorageEventStore: vi.fn(),
+  MemoryEventStore: vi.fn(),
 }));
 
 vi.mock('./config.js', () => ({
@@ -70,6 +71,7 @@ function makeState(overrides: Record<string, unknown> = {}) {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('storage_consent', 'accepted');
     mockUseGame.mockReturnValue({
       state: makeState(),
       move: mockMove,
@@ -81,6 +83,10 @@ describe('App', () => {
       durationMs: 42,
       scores: { up: 10, down: 5, left: 20, right: 3 },
     });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('renders the game board and score', () => {
@@ -358,10 +364,8 @@ describe('App', () => {
 
     expect(screen.getByText('Last Moves')).toBeInTheDocument();
 
-    // Advance YOLO interval
     vi.advanceTimersByTime(500);
 
-    // Simulate state update after YOLO move
     mockUseGame.mockReturnValue({
       state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
       move: mockMove,
@@ -437,5 +441,61 @@ describe('App', () => {
     expect(screen.queryByText('Left')).not.toBeInTheDocument();
 
     vi.useRealTimers();
+  });
+});
+
+describe('App welcome overlay', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockUseGame.mockReturnValue({
+      state: makeState(),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('shows welcome overlay on first load', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+  });
+
+  it('does not show welcome overlay when consent already given', () => {
+    localStorage.setItem('storage_consent', 'accepted');
+    render(<App />);
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+  });
+
+  it('does not show welcome overlay when consent already declined', () => {
+    localStorage.setItem('storage_consent', 'declined');
+    render(<App />);
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+  });
+
+  it('stores accepted consent and hides overlay on accept', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Accept & Play'));
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBe('accepted');
+  });
+
+  it('stores declined consent and hides overlay on decline', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Play without saving'));
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBe('declined');
   });
 });

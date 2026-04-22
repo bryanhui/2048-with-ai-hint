@@ -2,7 +2,7 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExpectimaxStrategy, measureMove } from '../ai/index.js';
-import { LocalStorageEventStore } from '../infrastructure/storage.js';
+import { LocalStorageEventStore, MemoryEventStore } from '../infrastructure/storage.js';
 import { CONFIG } from './config.js';
 import { useGame } from './hooks/useGame.js';
 import { useKeyboard } from './hooks/useKeyboard.js';
@@ -13,16 +13,31 @@ import { MoveHistory } from './components/MoveHistory.js';
 import { GameOverlay } from './components/GameOverlay.js';
 import { HintArrow } from './components/HintArrow.js';
 import { AiHintPanel } from './components/AiHintPanel.js';
+import { WelcomeOverlay } from './components/WelcomeOverlay.js';
 
 const LONG_PRESS_MS = 500;
+const CONSENT_KEY = 'storage_consent';
 
 export function App(): React.ReactElement {
+  const [consent, setConsent] = useState<'pending' | 'accepted' | 'declined'>('pending');
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CONSENT_KEY);
+    if (stored === 'accepted' || stored === 'declined') {
+      setConsent(stored);
+    }
+  }, []);
+
+  const store = useMemo(() => {
+    if (consent === 'accepted') return new LocalStorageEventStore();
+    return new MemoryEventStore();
+  }, [consent]);
+
   const strategy = useMemo(() => {
     if (!CONFIG.ENABLE_AI_HINT) return null;
     return new ExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH);
   }, []);
 
-  const store = useMemo(() => new LocalStorageEventStore(), []);
   const { state, move, undo, newGame } = useGame({
     store,
     gameId: 'default',
@@ -149,10 +164,26 @@ export function App(): React.ReactElement {
     }
   }, []);
 
+  const handleAccept = useCallback(() => {
+    localStorage.setItem(CONSENT_KEY, 'accepted');
+    setConsent('accepted');
+  }, []);
+
+  const handleDecline = useCallback(() => {
+    localStorage.setItem(CONSENT_KEY, 'declined');
+    setConsent('declined');
+  }, []);
+
   const { spawnPosition, mergedPositions } = getSpawnAndMerged(state.history);
 
   return (
     <div className="app">
+      <WelcomeOverlay
+        visible={consent === 'pending'}
+        onAccept={handleAccept}
+        onDecline={handleDecline}
+      />
+
       <header className="header">
         <h1 className="logo">2048</h1>
         <div className="scores">

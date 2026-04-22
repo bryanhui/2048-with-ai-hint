@@ -350,6 +350,26 @@ html, body {
   justify-content: center;
 }
 
+.welcome-content {
+  max-width: 400px;
+}
+
+.welcome-hint {
+  font-size: 16px;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.welcome-hint strong {
+  color: var(--gold-soft);
+}
+
+.welcome-cookie {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
 .history {
   background: var(--tile-bg);
   border: 1px solid var(--tile-border);
