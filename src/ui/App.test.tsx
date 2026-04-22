@@ -532,27 +532,45 @@ describe('App welcome overlay', () => {
     expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
   });
 
-  it('does not show welcome overlay when consent already declined', () => {
+  it('shows welcome overlay when consent was previously declined (stale flag)', () => {
     localStorage.setItem('storage_consent', 'declined');
     render(<App />);
-    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBeNull();
   });
 
   it('stores accepted consent and hides overlay on accept', () => {
     render(<App />);
     expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Accept & Play'));
+    fireEvent.click(screen.getByText('Accept and play'));
     expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
     expect(localStorage.getItem('storage_consent')).toBe('accepted');
   });
 
-  it('stores declined consent and hides overlay on decline', () => {
+  it('does not store anything on decline', () => {
     render(<App />);
     expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Play without saving'));
+    fireEvent.click(screen.getByText('Reject and play'));
     expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
-    expect(localStorage.getItem('storage_consent')).toBe('declined');
+    expect(localStorage.getItem('storage_consent')).toBeNull();
+  });
+
+  it('shows welcome again after decline (no persistence)', () => {
+    const { unmount } = render(<App />);
+    fireEvent.click(screen.getByText('Reject and play'));
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+
+    unmount();
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+  });
+
+  it('clears stale declined flag on load', () => {
+    localStorage.setItem('storage_consent', 'declined');
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBeNull();
   });
 });

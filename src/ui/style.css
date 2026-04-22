@@ -378,6 +378,12 @@ html, body {
 .welcome-cookie {
   font-size: 14px;
   color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.welcome-cookie-warning {
+  font-size: 13px;
+  color: #dc8c6b;
   margin: 0 0 24px;
 }
 

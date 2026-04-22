@@ -21,26 +21,27 @@ describe('WelcomeOverlay', () => {
 
   it('shows cookie consent notice', () => {
     render(<WelcomeOverlay visible={true} onAccept={vi.fn()} onDecline={vi.fn()} />);
-    expect(screen.getByText(/local storage/i)).toBeInTheDocument();
+    expect(screen.getByText(/cookies/i)).toBeInTheDocument();
+    expect(screen.getByText(/high score will not be auto-saved/i)).toBeInTheDocument();
   });
 
   it('shows accept and decline buttons', () => {
     render(<WelcomeOverlay visible={true} onAccept={vi.fn()} onDecline={vi.fn()} />);
-    expect(screen.getByText('Accept & Play')).toBeInTheDocument();
-    expect(screen.getByText('Play without saving')).toBeInTheDocument();
+    expect(screen.getByText('Accept and play')).toBeInTheDocument();
+    expect(screen.getByText('Reject and play')).toBeInTheDocument();
   });
 
   it('calls onAccept when accept clicked', () => {
     const onAccept = vi.fn();
     render(<WelcomeOverlay visible={true} onAccept={onAccept} onDecline={vi.fn()} />);
-    fireEvent.click(screen.getByText('Accept & Play'));
+    fireEvent.click(screen.getByText('Accept and play'));
     expect(onAccept).toHaveBeenCalled();
   });
 
   it('calls onDecline when decline clicked', () => {
     const onDecline = vi.fn();
     render(<WelcomeOverlay visible={true} onAccept={vi.fn()} onDecline={onDecline} />);
-    fireEvent.click(screen.getByText('Play without saving'));
+    fireEvent.click(screen.getByText('Reject and play'));
     expect(onDecline).toHaveBeenCalled();
   });
 });

@@ -17,14 +17,17 @@ export function WelcomeOverlay({ visible, onAccept, onDecline }: WelcomeOverlayP
           Did you know? You can long press <strong>AI Hint</strong> for auto-regeneration.
         </p>
         <p className="welcome-cookie">
-          This game uses local storage to save your progress.
+          This game uses cookies to save your game state and high score.
+        </p>
+        <p className="welcome-cookie-warning">
+          Rejecting means your game state and high score will not be auto-saved.
         </p>
         <div className="overlay-actions">
           <button id="btn-accept" className="btn btn-gold" onClick={onAccept}>
-            Accept &amp; Play
+            Accept and play
           </button>
           <button id="btn-decline" className="btn" onClick={onDecline}>
-            Play without saving
+            Reject and play
           </button>
         </div>
       </div>

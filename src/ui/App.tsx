@@ -24,8 +24,12 @@ export function App(): React.ReactElement {
 
   useEffect(() => {
     const stored = localStorage.getItem(CONSENT_KEY);
-    if (stored === 'accepted' || stored === 'declined') {
-      setConsent(stored);
+    if (stored === 'accepted') {
+      setConsent('accepted');
+    } else {
+      // No valid consent (missing, declined, or unknown). Clear any stale data.
+      if (stored) localStorage.removeItem(CONSENT_KEY);
+      setConsent('pending');
     }
   }, []);
 
@@ -192,7 +196,6 @@ export function App(): React.ReactElement {
   }, []);
 
   const handleDecline = useCallback(() => {
-    localStorage.setItem(CONSENT_KEY, 'declined');
     setConsent('declined');
   }, []);
 
