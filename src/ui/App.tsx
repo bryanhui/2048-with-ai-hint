@@ -183,19 +183,6 @@ export function App(): React.ReactElement {
             Undo
           </button>
         )}
-        {CONFIG.ENABLE_AI_HINT && (
-          <button
-            id="btn-hint"
-            className={`btn ${autoHint ? 'btn-danger' : 'btn-gold'}`}
-            onMouseDown={handleHintPointerDown}
-            onMouseUp={handleHintPointerUp}
-            onMouseLeave={handleHintPointerLeave}
-            onTouchStart={handleHintPointerDown}
-            onTouchEnd={handleHintPointerUp}
-          >
-            {autoHint ? 'Auto Hint' : 'AI Hint'}
-          </button>
-        )}
       </div>
 
       <div
@@ -220,8 +207,21 @@ export function App(): React.ReactElement {
         onResume={() => setOverlayDismissed(true)}
       />
 
-      {CONFIG.ENABLE_YOLO && (
-        <div className="yolo-controls">
+      <div className="bottom-controls">
+        {CONFIG.ENABLE_AI_HINT && (
+          <button
+            id="btn-hint"
+            className={`btn ${autoHint ? 'btn-danger' : 'btn-gold'}`}
+            onMouseDown={handleHintPointerDown}
+            onMouseUp={handleHintPointerUp}
+            onMouseLeave={handleHintPointerLeave}
+            onTouchStart={handleHintPointerDown}
+            onTouchEnd={handleHintPointerUp}
+          >
+            {autoHint ? 'Auto Hint' : 'AI Hint'}
+          </button>
+        )}
+        {CONFIG.ENABLE_YOLO && (
           <button
             id="btn-yolo"
             className={`btn ${yoloEnabled ? 'btn-danger' : 'btn-gold'}`}
@@ -229,8 +229,8 @@ export function App(): React.ReactElement {
           >
             {yoloEnabled ? 'Stop AI' : 'YOLO AI'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {yoloEnabled && (
         <div className="history">

@@ -87,6 +87,13 @@ html, body {
   flex-wrap: wrap;
 }
 
+.bottom-controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .ai-bar {
   align-items: center;
 }
