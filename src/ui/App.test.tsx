@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 const mockUseGame = vi.fn();
 const mockUseKeyboard = vi.fn();
@@ -35,6 +35,7 @@ vi.mock('../ai/index.js', () => ({
 
 vi.mock('../infrastructure/storage.js', () => ({
   LocalStorageEventStore: vi.fn(),
+  MemoryEventStore: vi.fn(),
 }));
 
 vi.mock('./config.js', () => ({
@@ -42,8 +43,10 @@ vi.mock('./config.js', () => ({
     ENABLE_STRATEGY_SELECTOR: true,
     ENABLE_AI_HINT: true,
     ENABLE_UNDO: true,
+    ENABLE_YOLO: true,
+    YOLO_DELAY_MS: 400,
     DEFAULT_STRATEGY: 'expectimax',
-    EXPECTIMAX_DEPTH: 4,
+    EXPECTIMAX_DEPTH: 6,
   },
 }));
 
@@ -68,6 +71,7 @@ function makeState(overrides: Record<string, unknown> = {}) {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.setItem('storage_consent', 'accepted');
     mockUseGame.mockReturnValue({
       state: makeState(),
       move: mockMove,
@@ -79,6 +83,10 @@ describe('App', () => {
       durationMs: 42,
       scores: { up: 10, down: 5, left: 20, right: 3 },
     });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('renders the game board and score', () => {
@@ -102,24 +110,46 @@ describe('App', () => {
 
   it('shows hint when AI Hint is clicked', async () => {
     render(<App />);
-    fireEvent.click(screen.getByText('AI Hint'));
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
 
     await waitFor(() => {
       expect(screen.getByText('Left')).toBeInTheDocument();
     });
   });
 
-  it('clears previous timeout when hint is clicked again', async () => {
+  it('hint does not auto-dismiss after 4 seconds', async () => {
     render(<App />);
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
 
-    fireEvent.click(screen.getByText('AI Hint'));
     await waitFor(() => {
       expect(screen.getByText('Left')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('AI Hint'));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.getByText('Left')).toBeInTheDocument();
+  });
+
+  it('dismisses hint when a move is made', async () => {
+    const { rerender } = render(<App />);
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
+
     await waitFor(() => {
       expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'up', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Left')).not.toBeInTheDocument();
     });
   });
 
@@ -132,7 +162,8 @@ describe('App', () => {
     });
 
     render(<App />);
-    fireEvent.click(screen.getByText('AI Hint'));
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(mockMeasureMove).not.toHaveBeenCalled();
@@ -146,7 +177,8 @@ describe('App', () => {
     });
 
     render(<App />);
-    fireEvent.click(screen.getByText('AI Hint'));
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
 
     await waitFor(() => {
       expect(screen.getByText('Left')).toBeInTheDocument();
@@ -177,7 +209,7 @@ describe('App', () => {
     expect(screen.getByText('Game Over')).toBeInTheDocument();
   });
 
-  it('hides overlay when Resume is clicked', () => {
+  it('hides overlay when Back to Game is clicked', () => {
     mockUseGame.mockReturnValue({
       state: makeState({ status: 'won' }),
       move: mockMove,
@@ -187,12 +219,340 @@ describe('App', () => {
 
     render(<App />);
     expect(screen.getByText('You Win!')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Resume'));
+    fireEvent.click(screen.getByText('Back to Game'));
     expect(screen.queryByText('You Win!')).not.toBeInTheDocument();
+  });
+
+  it('shows error when trying to move after winning', () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'won' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    expect(wrappedMove).toBeDefined();
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you won)')).toBeInTheDocument();
+  });
+
+  it('shows error when trying to move after losing', () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'lost' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    expect(wrappedMove).toBeDefined();
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you lost)')).toBeInTheDocument();
+  });
+
+  it('move error auto-dismisses after 2 seconds', async () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'won' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you won)')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByText('Game over (you won)')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   it('attaches touch handler to board', () => {
     render(<App />);
     expect(mockAttachTouch).toHaveBeenCalled();
+  });
+
+  it('dismisses hint overlay when board is clicked', async () => {
+    render(<App />);
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(document.getElementById('board')!);
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
+  });
+
+  it('dismisses hint overlay when panel is clicked', async () => {
+    render(<App />);
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/Expectimax ·/i));
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
+  });
+
+  it('shows all 4 direction scores in hint', async () => {
+    render(<App />);
+    fireEvent.mouseDown(screen.getByText('AI Hint'));
+    fireEvent.mouseUp(screen.getByText('AI Hint'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/↑/)).toBeInTheDocument();
+      expect(screen.getByText(/↓/)).toBeInTheDocument();
+      expect(screen.getByText(/←/)).toBeInTheDocument();
+      expect(screen.getByText(/→/)).toBeInTheDocument();
+    });
+  });
+
+  it('long press on AI Hint enables auto-hint mode', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<App />);
+    const btn = screen.getByText('AI Hint');
+
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Hint')).toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('auto-hint generates hint after a move', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValueOnce({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    const btn = screen.getByText('AI Hint');
+
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Hint')).toBeInTheDocument();
+    });
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'up', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(mockMeasureMove).toHaveBeenCalled();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('clicking AI Hint while auto-hint is active disables it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    render(<App />);
+    const btn = screen.getByText('AI Hint');
+
+    fireEvent.mouseDown(btn);
+    vi.advanceTimersByTime(600);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Auto Hint')).toBeInTheDocument();
+    });
+
+    fireEvent.mouseDown(btn);
+    fireEvent.mouseUp(btn);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Auto Hint')).not.toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('hides MoveHistory when YOLO is off', () => {
+    render(<App />);
+    expect(screen.queryByText('Last Moves')).not.toBeInTheDocument();
+  });
+
+  it('shows MoveHistory when YOLO is turned on', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
+  });
+
+  it('YOLO mode shows hint after auto-move', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
+
+    vi.advanceTimersByTime(500);
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('YOLO hint is not dismissed by board click', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    vi.advanceTimersByTime(500);
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(document.getElementById('board')!);
+    expect(screen.getByText('Left')).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it('dismisses YOLO hint when YOLO is turned off', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+
+    const { rerender } = render(<App />);
+    fireEvent.click(screen.getByText('YOLO AI'));
+
+    vi.advanceTimersByTime(500);
+
+    mockUseGame.mockReturnValue({
+      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    rerender(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Left')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Stop AI'));
+    expect(screen.queryByText('Left')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+});
+
+describe('App welcome overlay', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockUseGame.mockReturnValue({
+      state: makeState(),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+    mockMeasureMove.mockResolvedValue({
+      direction: 'left',
+      durationMs: 42,
+      scores: { up: 10, down: 5, left: 20, right: 3 },
+    });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it('shows welcome overlay on first load', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+  });
+
+  it('does not show welcome overlay when consent already given', () => {
+    localStorage.setItem('storage_consent', 'accepted');
+    render(<App />);
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+  });
+
+  it('does not show welcome overlay when consent already declined', () => {
+    localStorage.setItem('storage_consent', 'declined');
+    render(<App />);
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+  });
+
+  it('stores accepted consent and hides overlay on accept', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Accept & Play'));
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBe('accepted');
+  });
+
+  it('stores declined consent and hides overlay on decline', () => {
+    render(<App />);
+    expect(screen.getByText('Welcome to 2048 AI')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Play without saving'));
+    expect(screen.queryByText('Welcome to 2048 AI')).not.toBeInTheDocument();
+    expect(localStorage.getItem('storage_consent')).toBe('declined');
   });
 });

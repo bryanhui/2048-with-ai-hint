@@ -21,6 +21,13 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function getStrategyDescription(strategyName: string): string {
+  if (strategyName === 'nvidia-nim') {
+    return 'Powered by an LLM via NVIDIA NIM. The model analyzes the board position, merge opportunities, and open space to recommend the best move.';
+  }
+  return 'Expectimax searches several moves ahead, scoring boards on tile ordering, smoothness, open cells and max tile value. It averages over random tile spawns to pick the move with the highest expected outcome.';
+}
+
 export function HintDisplay({
   visible,
   direction,
@@ -49,9 +56,7 @@ export function HintDisplay({
           {secondScore.toLocaleString()} ({capitalize(secondDirection)})
         </div>
         <div className="hint-toast-reason">
-          Expectimax searches several moves ahead, scoring boards on tile ordering,
-          smoothness, open cells and max tile value. It averages over random tile
-          spawns to pick the move with the highest expected outcome.
+          {getStrategyDescription(strategyName)}
         </div>
       </div>
     </>

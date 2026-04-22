@@ -125,9 +125,45 @@ describe('moveLeft', () => {
     const result = moveLeft(board);
     expect(result.changed).toBe(false);
   });
+
+  it('double merge: [2,2,2,2] → [4,4,null,null] with score 8', () => {
+    const board = [
+      [2, 2, 2, 2],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveLeft(board);
+    expect(result.board).toEqual([
+      [4, 4, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('double merge: [2,2,4,4] → [4,8,null,null] with score 12', () => {
+    const board = [
+      [2, 2, 4, 4],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ];
+    const result = moveLeft(board);
+    expect(result.board).toEqual([
+      [4, 8, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(12);
+    expect(result.changed).toBe(true);
+  });
 });
 
-describe('move', () => {
+describe('move (all directions)', () => {
   const base = [
     [null, 8, 2, 2],
     [4, 2, null, 2],
@@ -135,7 +171,19 @@ describe('move', () => {
     [null, null, null, 2],
   ];
 
-  it('moves right', () => {
+  it('left', () => {
+    const result = move(base, 'left');
+    expect(result.board).toEqual([
+      [8, 4, null, null],
+      [4, 4, null, null],
+      [null, null, null, null],
+      [2, null, null, null],
+    ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
+  });
+
+  it('right', () => {
     const result = move(base, 'right');
     expect(result.board).toEqual([
       [null, null, 8, 4],
@@ -143,9 +191,11 @@ describe('move', () => {
       [null, null, null, null],
       [null, null, null, 2],
     ]);
+    expect(result.scoreDelta).toBe(8);
+    expect(result.changed).toBe(true);
   });
 
-  it('moves up', () => {
+  it('up', () => {
     const result = move(base, 'up');
     expect(result.board).toEqual([
       [4, 8, 2, 4],
@@ -153,9 +203,11 @@ describe('move', () => {
       [null, null, null, null],
       [null, null, null, null],
     ]);
+    expect(result.scoreDelta).toBe(4);
+    expect(result.changed).toBe(true);
   });
 
-  it('moves down', () => {
+  it('down', () => {
     const result = move(base, 'down');
     expect(result.board).toEqual([
       [null, null, null, null],
@@ -163,6 +215,21 @@ describe('move', () => {
       [null, 8, null, 2],
       [4, 2, 2, 4],
     ]);
+    expect(result.scoreDelta).toBe(4);
+    expect(result.changed).toBe(true);
+  });
+
+  it('returns changed false when board does not change', () => {
+    const stuck = [
+      [2, 4, 8, 16],
+      [4, 8, 16, 32],
+      [8, 16, 32, 64],
+      [16, 32, 64, 128],
+    ];
+    expect(move(stuck, 'left').changed).toBe(false);
+    expect(move(stuck, 'right').changed).toBe(false);
+    expect(move(stuck, 'up').changed).toBe(false);
+    expect(move(stuck, 'down').changed).toBe(false);
   });
 });
 
@@ -182,9 +249,9 @@ describe('canMove', () => {
       [2, 4, 2, 4],
       [4, 2, 4, 2],
       [2, 4, 2, 4],
-      [4, 2, 4, 2],
+      [4, 2, 4, 4],
     ];
-    expect(canMove(board)).toBe(false);
+    expect(canMove(board)).toBe(true);
   });
 
   it('returns false when board is full and no merges possible', () => {

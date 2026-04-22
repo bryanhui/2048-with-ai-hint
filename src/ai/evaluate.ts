@@ -9,7 +9,7 @@ const MONOTONICITY_WEIGHT = 47;
 const SMOOTHNESS_WEIGHT = 11;
 const EMPTY_WEIGHT = 270;
 const MAX_TILE_WEIGHT = 16;
-const CORNER_WEIGHT = 100;
+const CORNER_WEIGHT = 10;
 
 export function evaluateBoard(board: Board): number {
   const empty = getEmptyCells(board).length;
