@@ -50,7 +50,6 @@ export function App(): React.ReactElement {
 
   const [hintVisible, setHintVisible] = useState(false);
   const [hintDirection, setHintDirection] = useState('left');
-  const [hintDuration, setHintDuration] = useState(0);
   const [hintScores, setHintScores] = useState<Record<string, number>>({});
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [yoloEnabled, setYoloEnabled] = useState(false);
@@ -133,14 +132,12 @@ export function App(): React.ReactElement {
       if (yoloEnabled && strategy && state.status === 'playing') {
         measureMove(strategy, state).then((result) => {
           setHintDirection(result.direction);
-          setHintDuration(result.durationMs);
           setHintScores(result.scores);
           setHintVisible(true);
         });
       } else if (autoHint && strategy && state.status === 'playing') {
         measureMove(strategy, state).then((result) => {
           setHintDirection(result.direction);
-          setHintDuration(result.durationMs);
           setHintScores(result.scores);
           setHintVisible(true);
         });
@@ -155,7 +152,6 @@ export function App(): React.ReactElement {
     if (!strategy || state.status !== 'playing') return;
     const result = await measureMove(strategy, state);
     setHintDirection(result.direction);
-    setHintDuration(result.durationMs);
     setHintScores(result.scores);
     setHintVisible(true);
   }, [state, strategy]);
@@ -215,20 +211,6 @@ export function App(): React.ReactElement {
           <ScoreBoard score={state.score} highScore={state.highScore} />
         </div>
       </header>
-
-      {CONFIG.ENABLE_AI_HINT && (
-        <AiHintPanel
-          hintVisible={hintVisible}
-          hintDirection={hintDirection}
-          strategyName={strategy?.name ?? ''}
-          durationMs={hintDuration}
-          hintScores={hintScores}
-          autoHint={autoHint || yoloEnabled}
-          onDismiss={() => {
-            if (!yoloEnabled) setHintVisible(false);
-          }}
-        />
-      )}
 
       <div className="controls">
         <button id="btn-new" className="btn" onClick={() => { setOverlayDismissed(false); newGame(); }}>
@@ -291,6 +273,13 @@ export function App(): React.ReactElement {
           </button>
         )}
       </div>
+
+      {CONFIG.ENABLE_AI_HINT && (
+        <AiHintPanel
+          hintDirection={hintDirection}
+          hintScores={hintScores}
+        />
+      )}
 
       {yoloEnabled && (
         <div className="history">

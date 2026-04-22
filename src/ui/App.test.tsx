@@ -108,48 +108,18 @@ describe('App', () => {
     expect(mockUndo).toHaveBeenCalled();
   });
 
-  it('shows hint when AI Hint is clicked', async () => {
+  it('populates hint scores when AI Hint is clicked', async () => {
     render(<App />);
+    // Before clicking, all scores are —
+    const dashesBefore = screen.getAllByText('—');
+    expect(dashesBefore.length).toBe(4);
+
     fireEvent.mouseDown(screen.getByText('AI Hint'));
     fireEvent.mouseUp(screen.getByText('AI Hint'));
 
     await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-  });
-
-  it('hint does not auto-dismiss after 4 seconds', async () => {
-    render(<App />);
-    fireEvent.mouseDown(screen.getByText('AI Hint'));
-    fireEvent.mouseUp(screen.getByText('AI Hint'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(screen.getByText('Left')).toBeInTheDocument();
-  });
-
-  it('dismisses hint when a move is made', async () => {
-    const { rerender } = render(<App />);
-    fireEvent.mouseDown(screen.getByText('AI Hint'));
-    fireEvent.mouseUp(screen.getByText('AI Hint'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-
-    mockUseGame.mockReturnValue({
-      state: makeState({ history: [{ direction: 'up', board: [], scoreDelta: 0 }] }),
-      move: mockMove,
-      undo: mockUndo,
-      newGame: mockNewGame,
-    });
-    rerender(<App />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Left')).not.toBeInTheDocument();
+      // After clicking, scores should be populated (not all —)
+      expect(screen.queryAllByText('—').length).toBeLessThan(4);
     });
   });
 
@@ -181,7 +151,7 @@ describe('App', () => {
     fireEvent.mouseUp(screen.getByText('AI Hint'));
 
     await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
+      expect(screen.getByText('20')).toBeInTheDocument();
     });
   });
 
@@ -285,43 +255,12 @@ describe('App', () => {
     expect(mockAttachTouch).toHaveBeenCalled();
   });
 
-  it('dismisses hint overlay when board is clicked', async () => {
+  it('shows all 4 direction scores in hint panel', () => {
     render(<App />);
-    fireEvent.mouseDown(screen.getByText('AI Hint'));
-    fireEvent.mouseUp(screen.getByText('AI Hint'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-
-    fireEvent.click(document.getElementById('board')!);
-    expect(screen.queryByText('Left')).not.toBeInTheDocument();
-  });
-
-  it('dismisses hint overlay when panel is clicked', async () => {
-    render(<App />);
-    fireEvent.mouseDown(screen.getByText('AI Hint'));
-    fireEvent.mouseUp(screen.getByText('AI Hint'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText(/Expectimax ·/i));
-    expect(screen.queryByText('Left')).not.toBeInTheDocument();
-  });
-
-  it('shows all 4 direction scores in hint', async () => {
-    render(<App />);
-    fireEvent.mouseDown(screen.getByText('AI Hint'));
-    fireEvent.mouseUp(screen.getByText('AI Hint'));
-
-    await waitFor(() => {
-      expect(screen.getByText(/↑/)).toBeInTheDocument();
-      expect(screen.getByText(/↓/)).toBeInTheDocument();
-      expect(screen.getByText(/←/)).toBeInTheDocument();
-      expect(screen.getByText(/→/)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/↑/)).toBeInTheDocument();
+    expect(screen.getByText(/↓/)).toBeInTheDocument();
+    expect(screen.getByText(/←/)).toBeInTheDocument();
+    expect(screen.getByText(/→/)).toBeInTheDocument();
   });
 
   it('long press on AI Hint enables auto-hint mode', async () => {
@@ -408,7 +347,7 @@ describe('App', () => {
     expect(screen.getByText('Last Moves')).toBeInTheDocument();
   });
 
-  it('YOLO mode shows hint after auto-move', async () => {
+  it('YOLO mode populates hint scores after auto-move', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockMeasureMove.mockResolvedValue({
       direction: 'left',
@@ -432,72 +371,28 @@ describe('App', () => {
     rerender(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
+      expect(mockMeasureMove).toHaveBeenCalled();
     });
 
     vi.useRealTimers();
   });
 
-  it('YOLO hint is not dismissed by board click', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    mockMeasureMove.mockResolvedValue({
-      direction: 'left',
-      durationMs: 42,
-      scores: { up: 10, down: 5, left: 20, right: 3 },
-    });
-
-    const { rerender } = render(<App />);
-    fireEvent.click(screen.getByText('YOLO AI'));
-
-    vi.advanceTimersByTime(500);
-
-    mockUseGame.mockReturnValue({
-      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
-      move: mockMove,
-      undo: mockUndo,
-      newGame: mockNewGame,
-    });
-    rerender(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
-
+  it('hint panel stays visible after board click', () => {
+    render(<App />);
     fireEvent.click(document.getElementById('board')!);
-    expect(screen.getByText('Left')).toBeInTheDocument();
-
-    vi.useRealTimers();
+    expect(screen.getByText(/↑/)).toBeInTheDocument();
+    expect(screen.getByText(/↓/)).toBeInTheDocument();
+    expect(screen.getByText(/←/)).toBeInTheDocument();
+    expect(screen.getByText(/→/)).toBeInTheDocument();
   });
 
-  it('dismisses YOLO hint when YOLO is turned off', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    mockMeasureMove.mockResolvedValue({
-      direction: 'left',
-      durationMs: 42,
-      scores: { up: 10, down: 5, left: 20, right: 3 },
-    });
-
-    const { rerender } = render(<App />);
+  it('hides MoveHistory when YOLO is turned off', () => {
+    render(<App />);
     fireEvent.click(screen.getByText('YOLO AI'));
-
-    vi.advanceTimersByTime(500);
-
-    mockUseGame.mockReturnValue({
-      state: makeState({ history: [{ direction: 'left', board: [], scoreDelta: 0 }] }),
-      move: mockMove,
-      undo: mockUndo,
-      newGame: mockNewGame,
-    });
-    rerender(<App />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Left')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Last Moves')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Stop AI'));
-    expect(screen.queryByText('Left')).not.toBeInTheDocument();
-
-    vi.useRealTimers();
+    expect(screen.queryByText('Last Moves')).not.toBeInTheDocument();
   });
 });
 

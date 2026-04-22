@@ -454,77 +454,53 @@ html, body {
   animation: tileMerge 0.18s ease-in-out;
 }
 
-/* AI Hint Panel (top banner) */
+/* AI Hint Panel */
 .ai-hint-panel {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--tile-border);
   border-radius: 12px;
   padding: 12px 16px;
   font-size: 13px;
+  min-height: 56px;
 }
 
-.ai-hint-result {
+.ai-hint-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.ai-hint-score-cell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.ai-hint-result-header {
-  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.ai-hint-direction {
-  font-size: 18px;
+.ai-hint-score-cell.ai-hint-score-best {
+  background: rgba(201, 162, 39, 0.12);
+}
+
+.ai-hint-score-icon {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.ai-hint-score-best .ai-hint-score-icon {
   color: var(--gold);
 }
 
-.ai-hint-meta {
-  color: var(--text-muted);
+.ai-hint-score-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.ai-hint-scores {
-  color: var(--text-muted);
-}
-
-.ai-hint-reason {
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.ai-hint-health {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.ai-hint-health-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ai-hint-health-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ai-hint-models {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ai-hint-model-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--text-muted);
+.ai-hint-score-best .ai-hint-score-value {
+  color: var(--gold);
 }
 
 .nim-health-badge {
