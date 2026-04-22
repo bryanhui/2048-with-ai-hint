@@ -14,6 +14,7 @@ import { GameOverlay } from './components/GameOverlay.js';
 import { HintArrow } from './components/HintArrow.js';
 import { AiHintPanel } from './components/AiHintPanel.js';
 import { WelcomeOverlay } from './components/WelcomeOverlay.js';
+import type { Direction } from '../core/types.js';
 
 const LONG_PRESS_MS = 500;
 const CONSENT_KEY = 'storage_consent';
@@ -54,8 +55,29 @@ export function App(): React.ReactElement {
   const longPressTimerRef = useRef<number | null>(null);
   const prevHistoryLengthRef = useRef(state.history.length);
   const prevYoloEnabledRef = useRef(yoloEnabled);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const moveErrorTimeoutRef = useRef<number | null>(null);
 
-  useKeyboard(move);
+  const wrappedMove = useCallback(
+    (direction: Direction) => {
+      if (state.status === 'won') {
+        setMoveError('Game over (you won)');
+        if (moveErrorTimeoutRef.current !== null) clearTimeout(moveErrorTimeoutRef.current);
+        moveErrorTimeoutRef.current = window.setTimeout(() => setMoveError(null), 2000);
+        return;
+      }
+      if (state.status === 'lost') {
+        setMoveError('Game over (you lost)');
+        if (moveErrorTimeoutRef.current !== null) clearTimeout(moveErrorTimeoutRef.current);
+        moveErrorTimeoutRef.current = window.setTimeout(() => setMoveError(null), 2000);
+        return;
+      }
+      move(direction);
+    },
+    [state.status, move]
+  );
+
+  useKeyboard(wrappedMove);
 
   const boardRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +87,8 @@ export function App(): React.ReactElement {
   useEffect(() => {
     const el = boardRef.current;
     if (!el) return;
-    return attachTouch(el, move);
-  }, [move]);
+    return attachTouch(el, wrappedMove);
+  }, [wrappedMove]);
 
   // YOLO auto-play interval
   useEffect(() => {
@@ -215,6 +237,10 @@ export function App(): React.ReactElement {
           </button>
         )}
       </div>
+
+      {moveError && (
+        <div className="move-error-toast">{moveError}</div>
+      )}
 
       <div
         id="board"

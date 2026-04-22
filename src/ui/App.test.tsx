@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 const mockUseGame = vi.fn();
 const mockUseKeyboard = vi.fn();
@@ -209,7 +209,7 @@ describe('App', () => {
     expect(screen.getByText('Game Over')).toBeInTheDocument();
   });
 
-  it('hides overlay when Resume is clicked', () => {
+  it('hides overlay when Back to Game is clicked', () => {
     mockUseGame.mockReturnValue({
       state: makeState({ status: 'won' }),
       move: mockMove,
@@ -219,8 +219,65 @@ describe('App', () => {
 
     render(<App />);
     expect(screen.getByText('You Win!')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Resume'));
+    fireEvent.click(screen.getByText('Back to Game'));
     expect(screen.queryByText('You Win!')).not.toBeInTheDocument();
+  });
+
+  it('shows error when trying to move after winning', () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'won' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    expect(wrappedMove).toBeDefined();
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you won)')).toBeInTheDocument();
+  });
+
+  it('shows error when trying to move after losing', () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'lost' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    expect(wrappedMove).toBeDefined();
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you lost)')).toBeInTheDocument();
+  });
+
+  it('move error auto-dismisses after 2 seconds', async () => {
+    mockUseGame.mockReturnValue({
+      state: makeState({ status: 'won' }),
+      move: mockMove,
+      undo: mockUndo,
+      newGame: mockNewGame,
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByText('Back to Game'));
+
+    const wrappedMove = mockUseKeyboard.mock.calls.at(-1)?.[0];
+    act(() => wrappedMove('up'));
+
+    expect(screen.getByText('Game over (you won)')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByText('Game over (you won)')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   it('attaches touch handler to board', () => {
