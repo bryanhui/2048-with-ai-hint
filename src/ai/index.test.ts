@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   pickBestMove,
   measureMove,
-  ExpectimaxStrategy,
+  ImprovedExpectimaxStrategy,
 } from './index.js';
 
 describe('ai index re-exports', () => {
   it('exports all strategy classes', () => {
-    expect(ExpectimaxStrategy).toBeDefined();
+    expect(ImprovedExpectimaxStrategy).toBeDefined();
   });
 
   it('exports utility functions', () => {

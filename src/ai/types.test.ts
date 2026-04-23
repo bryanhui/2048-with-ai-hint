@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { pickBestMove, measureMove } from './types.js';
 import { makeState } from './test-helpers.js';
-import { ExpectimaxStrategy } from './expectimax.js';
+import { ImprovedExpectimaxStrategy } from './improved_expectimax.js';
 
 describe('pickBestMove', () => {
   it('returns direction with highest score', () => {
@@ -22,7 +22,7 @@ describe('pickBestMove', () => {
 
 describe('measureMove', () => {
   it('returns direction, scores, and positive duration', async () => {
-    const strategy = new ExpectimaxStrategy(1);
+    const strategy = new ImprovedExpectimaxStrategy(1, 50);
     const state = makeState([
       [2, 2, 0, 0],
       [0, 0, 0, 0],

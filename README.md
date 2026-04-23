@@ -7,7 +7,7 @@ A 2048 clone built with TypeScript, React, and Vite. Event-sourced state managem
 ## What's here
 
 - **Core game logic** in `src/core/` — event-sourced state management, board operations, win/loss detection
-- **AI** in `src/ai/` — Improved Expectimax strategy for hints (based on [nneonneo's 2048-ai](https://github.com/nneonneo/2048-ai))
+- **AI** in `src/ai/` — Improved Expectimax strategy for hints
 - **Web UI** in `src/ui/` — keyboard + touch controls, AI hint arrows with score breakdowns
 
 ## Running it
@@ -35,7 +35,7 @@ Expectimax is a game-tree search algorithm that handles the randomness in 2048 (
 1. **Player nodes** — try all 4 directions and pick the one with the highest expected score
 2. **Chance nodes** — average the score over possible tile spawns (2 or 4 at each empty cell)
 
-The improved implementation uses:
+The active implementation uses:
 - **Iterative deepening** — searches depth 1 → max depth, returning the best fully-completed layer within the time budget (default 100ms)
 - **Snake-pattern weight matrix** — rewards placing large tiles in a corner and forming a decreasing snake across the board
 - **Smoothness penalty** — discourages adjacent tiles with very different values
@@ -45,9 +45,9 @@ The improved implementation uses:
 
 Chance-node sampling is adaptive: up to **8 spawn positions** are evaluated at the top level of the tree, and **2** at deeper levels. This keeps the search fast while still considering the most important random outcomes.
 
-### Algorithm credit
+### Alternative strategy
 
-The expectimax implementation is based on the algorithm described in [nneonneo's 2048-ai](https://github.com/nneonneo/2048-ai). The original homegrown expectimax is kept as `ExpectimaxStrategy` in `src/ai/expectimax.ts` (now called "expectimax2" for reference).
+`src/ai/nn_expectimax.ts` contains a bitboard-based expectimax ported from a well-known C++ reference implementation. It uses precomputed move/heuristic tables and probability pruning. Run `npx tsx src/benchmark/ai-compare.ts` to compare it against the active strategy.
 
 ## Configuration
 
