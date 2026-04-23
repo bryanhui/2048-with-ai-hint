@@ -237,90 +237,6 @@ html, body {
 .tile[data-value="1024"] { background: rgba(201,162,39,0.70); color: #fff8dc; font-size: 20px; }
 .tile[data-value="2048"] { background: linear-gradient(135deg, rgba(201,162,39,0.85), rgba(176,141,87,0.85)); color: #0f1115; font-size: 20px; box-shadow: 0 0 18px rgba(201,162,39,0.35); }
 
-.hint-arrow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hint-arrow {
-  transition: transform 0.2s ease;
-}
-
-.hint-arrow[data-dir="up"]    { transform: rotate(0deg); }
-.hint-arrow[data-dir="down"]  { transform: rotate(180deg); }
-.hint-arrow[data-dir="left"]  { transform: rotate(-90deg); }
-.hint-arrow[data-dir="right"] { transform: rotate(90deg); }
-
-.hint-arrow svg {
-  width: 56px;
-  height: 56px;
-  color: var(--gold);
-  filter: drop-shadow(0 0 14px rgba(201, 162, 39, 0.6));
-}
-
-.hint-arrow .hint-pulse {
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
-  100% { opacity: 0.5; transform: scale(0.9); }
-}
-
-.hint-toast {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 90%;
-  z-index: 10;
-  background: rgba(26, 29, 38, 0.95);
-  border: 1px solid var(--tile-border);
-  border-left: 3px solid var(--gold);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  animation: slideUp 0.25s ease-out;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.hint-toast strong {
-  color: var(--gold-soft);
-  font-size: 15px;
-}
-
-.hint-toast .hint-meta {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.hint-toast-scores {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.hint-toast-reason {
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.4;
-  margin-top: 2px;
-  max-width: 280px;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .overlay {
   position: fixed;
   inset: 0;
@@ -332,7 +248,7 @@ html, body {
   z-index: 100;
 }
 
-.overlay.hidden, .hint-arrow.hidden {
+.overlay.hidden {
   display: none;
 }
 

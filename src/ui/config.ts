@@ -1,5 +1,5 @@
 export const CONFIG = {
-  /** Enable the strategy selector dropdown */
+  /** @deprecated Not implemented — strategy selector UI does not exist */
   ENABLE_STRATEGY_SELECTOR: false,
 
   /** Enable the AI hint button */

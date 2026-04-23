@@ -23,9 +23,9 @@ vi.mock('./input.js', () => ({
 }));
 
 vi.mock('../ai/index.js', () => ({
-  ImprovedExpectimaxStrategy: function () {
+  NnExpectimaxStrategy: function () {
     return {
-      name: 'improved_expectimax',
+      name: 'nn_expectimax',
       selectMove: vi.fn(),
       scoreMoves: () => ({ up: 10, down: 5, left: 20, right: 3 }),
     };

@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ImprovedExpectimaxStrategy, measureMove } from '../ai/index.js';
+import { NnExpectimaxStrategy, measureMove } from '../ai/index.js';
 import { LocalStorageEventStore, MemoryEventStore } from '../infrastructure/storage.js';
 import { CONFIG } from './config.js';
 import { useGame } from './hooks/useGame.js';
@@ -39,7 +39,7 @@ export function App(): React.ReactElement {
 
   const strategy = useMemo(() => {
     if (!CONFIG.ENABLE_AI_HINT) return null;
-    return new ImprovedExpectimaxStrategy(CONFIG.EXPECTIMAX_DEPTH, 100);
+    return new NnExpectimaxStrategy();
   }, []);
 
   const { state, move, undo, newGame } = useGame({
